@@ -39,6 +39,7 @@ export default env => {
           './App': './src/App.tsx',
           './AuthProvider': './src/auth/components/AuthProvider.tsx',
           './LoginComponent': './src/auth/components/LoginComponent.tsx',
+          './LogoffButton': './src/auth/components/LogoffButton.tsx',
         },
         dts: false,
         shared: {
