@@ -1,97 +1,327 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Auth - Módulo de Autenticação do SuperApp
 
-# Getting Started
+O **Auth** é o módulo de autenticação do SuperApp bancário, responsável por gerenciar login, logout, sessão de usuário e controle de acesso através do Module Federation.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 📋 Visão Geral
 
-## Step 1: Start Metro
+Este módulo fornece:
+- **Sistema de Autenticação**: Login/logout com validação de credenciais
+- **Gerenciamento de Sessão**: Estado persistente da autenticação
+- **Controle de Acesso**: AuthProvider com pattern function-as-children
+- **Module Federation**: Componentes exportados para integração no SuperApp
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 🏗️ Arquitetura
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+```
+Auth/
+├── src/
+│   ├── App.tsx                         # App principal do módulo
+│   └── auth/
+│       ├── components/
+│       │   ├── AuthProvider.tsx        # Provider com function-as-children
+│       │   └── LoginComponent.tsx      # Interface de login
+│       ├── services/
+│       │   └── AuthServices.ts         # Serviços de autenticação
+│       └── store/
+│           ├── authStore.ts            # Zustand store principal
+│           └── index.ts                # Barrel exports
+├── rspack.config.mjs                   # Configuração Module Federation
+└── package.json
+```
 
-```sh
-# Using npm
+## 🚀 Funcionalidades
+
+### 1. Autenticação
+- **Login**: Validação de credenciais com dados mock
+- **Logout**: Limpeza de sessão e invalidação de token
+- **Validação de Sessão**: Verificação automática de token válido
+- **Tratamento de Erros**: Mensagens amigáveis para credenciais inválidas
+
+### 2. Gerenciamento de Estado (Zustand)
+- **UserSession**: Estado da sessão do usuário
+- **Dados do Usuário**: Nome, email, contas bancárias
+- **Estados de UI**: Loading, autenticado, mensagens de erro
+- **Actions**: login(), logout(), clearError(), validateSession()
+
+### 3. Componentes Exportados
+- **AuthProvider**: Wrapper com function-as-children pattern
+- **LoginComponent**: Interface completa de login
+- **App**: Aplicação principal do módulo
+
+## 🔧 Configuração e Instalação
+
+### Pré-requisitos
+- Node.js >= 18
+- React Native CLI
+- CocoaPods (para iOS)
+
+### Instalação
+```bash
+# Instalar dependências
+npm install
+
+# iOS - Instalar pods
+cd ios && pod install && cd ..
+
+# Iniciar Metro bundler na porta 8084
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# Executar no iOS
 npm run ios
 
-# OR using Yarn
-yarn ios
+# Executar no Android  
+npm run android
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## 📦 Dependências Principais
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```json
+{
+  "react": "19.0.0",
+  "react-native": "0.79.5",
+  "@react-navigation/native": "^7.1.14",
+  "@react-navigation/native-stack": "^7.3.21",
+  "zustand": "^5.0.6",
+  "axios": "^1.10.0",
+  "@callstack/repack": "^5.1.3",
+  "@module-federation/enhanced": "^0.17.0"
+}
+```
 
-## Step 3: Modify your app
+## 🌐 Module Federation
 
-Now that you have successfully run the app, let's make changes!
+### Configuração
+O módulo expõe componentes para integração com outros módulos:
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+```javascript
+// rspack.config.mjs
+new ModuleFederationPlugin({
+  name: 'Auth',
+  exposes: {
+    './App': './src/App.tsx',
+    './AuthProvider': './src/auth/components/AuthProvider.tsx',
+    './LoginComponent': './src/auth/components/LoginComponent.tsx',
+  },
+  shared: {
+    react: { singleton: true, eager: false },
+    'react-native': { singleton: true, eager: false },
+    // ... outras dependências compartilhadas
+  }
+})
+```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+### Uso em Outros Módulos
+```tsx
+// Host App - Importação de componentes remotos
+const AuthProvider = React.lazy(() => import('Auth/AuthProvider'));
+const LoginComponent = React.lazy(() => import('Auth/LoginComponent'));
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+// Uso com function-as-children pattern
+<AuthProvider>
+  {(authState) => (
+    authState.isAuthenticated ? (
+      <MainApp />
+    ) : (
+      <LoginComponent />
+    )
+  )}
+</AuthProvider>
+```
 
-## Congratulations! :tada:
+## 🔐 Sistema de Autenticação
 
-You've successfully run and modified your React Native App. :partying_face:
+### Usuários de Teste
+```javascript
+// Credenciais válidas para desenvolvimento
+user1 / senha1  // João Silva - 2 contas
+user2 / senha2  // Maria Santos - 3 contas
 
-### Now what?
+// Qualquer outra combinação retorna erro
+```
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+### Dados Mock dos Usuários
+```javascript
+{
+  user1: {
+    user: { id: '1', name: 'João Silva', email: 'joao.silva@email.com' },
+    accounts: [
+      { accountNumber: '12345-6', balance: 15420.50, type: 'checking' },
+      { accountNumber: '12345-7', balance: 8750.25, type: 'savings' }
+    ]
+  },
+  user2: {
+    user: { id: '2', name: 'Maria Santos', email: 'maria.santos@email.com' },
+    accounts: [
+      { accountNumber: '98765-4', balance: 23150.75, type: 'checking' },
+      { accountNumber: '98765-5', balance: 12000.00, type: 'savings' },
+      { accountNumber: '98765-6', balance: 5500.30, type: 'checking' }
+    ]
+  }
+}
+```
 
-# Troubleshooting
+## 🏪 Zustand Store
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+### Estado da Sessão
+```typescript
+interface UserSession {
+  user: User | null;
+  accounts: Account[];
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  errorMessage: string | null;
+}
+```
 
-# Learn More
+### Actions Disponíveis
+```typescript
+// Login do usuário
+await login(username: string, password: string);
 
-To learn more about React Native, take a look at the following resources:
+// Logout e limpeza da sessão
+await logout();
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+// Limpar mensagens de erro
+clearError();
+
+// Validar sessão atual
+await validateSession(): Promise<boolean>;
+```
+
+### Selectors Otimizados
+```typescript
+// Hooks especializados para facilitar o uso
+const user = useUser();
+const accounts = useAccounts();
+const isAuthenticated = useIsAuthenticated();
+const isLoading = useIsLoading();
+const errorMessage = useErrorMessage();
+```
+
+## 🎨 Interface do Usuário
+
+### LoginComponent
+- **Campos de Input**: Usuário e senha com validação
+- **Tratamento de Estados**: Loading, erro, sucesso
+- **Instruções**: Dicas sobre usuários de teste
+- **Design Responsivo**: Interface adaptável e acessível
+
+### Tela Autenticada
+- **Dados do Usuário**: Nome e email
+- **Lista de Contas**: Número, tipo e saldo formatado
+- **Ação de Logout**: Botão para sair da sessão
+
+## 🔄 Fluxo de Autenticação
+
+1. **Usuário insere credenciais** → LoginComponent
+2. **Validação via AuthServices** → Dados mock ou erro
+3. **Atualização da Store** → Estado de autenticação
+4. **AuthProvider reativa** → Renderiza conteúdo baseado no estado
+5. **App principal exibido** → Usuário autenticado
+
+## 🚨 Tratamento de Erros
+
+### Validação de Credenciais
+- **Credenciais inválidas**: Mensagem específica de erro
+- **Campos vazios**: Validação local antes do envio
+- **Sessão expirada**: Logout automático e redirecionamento
+
+### Estados de Loading
+- **Login em progresso**: Indicador visual durante autenticação
+- **Validação de sessão**: Placeholder durante verificação
+- **Logout**: Feedback visual durante processo
+
+## 🧪 Desenvolvimento e Testes
+
+### Scripts Disponíveis
+```bash
+# Desenvolvimento
+npm start                    # Metro na porta 8084
+npm run dev:android         # Android com port forwarding
+npm run adb:reverse         # Configurar port forwarding
+
+# Qualidade de código
+npm run lint                # ESLint
+npm test                    # Jest tests
+```
+
+### Port Forwarding Android
+```bash
+# Configurar acesso ao módulo Auth
+adb reverse tcp:8084 tcp:8084
+```
+
+## 🌍 Integração com SuperApp
+
+### Arquitetura do Host
+```typescript
+// Host App integra Auth como primeiro layer
+<NavigationContainer>
+  <AuthProvider>
+    {(authState) => 
+      authState.isAuthenticated ? <MainApp /> : <LoginScreen />
+    }
+  </AuthProvider>
+</NavigationContainer>
+```
+
+### Variáveis de Ambiente (Host)
+```bash
+# env/.env.development
+AUTH_MINI_APP_URL=http://localhost:8084
+```
+
+### Dependências Compartilhadas
+- React 19.0.0 (singleton)
+- React Native 0.79.5 (singleton)
+- React Navigation 7.x (singleton)
+- Zustand 5.0.6 (compartilhado)
+
+## 🛠️ Troubleshooting
+
+### Problemas Comuns
+
+1. **Module Federation não carrega**
+   - **Causa**: Módulo Auth não está rodando na porta 8084
+   - **Solução**: `curl http://localhost:8084` para verificar
+   - **Android**: Verificar `adb reverse tcp:8084 tcp:8084`
+
+2. **Erro de autenticação**
+   - **Causa**: Credenciais incorretas
+   - **Solução**: Usar `user1/senha1` ou `user2/senha2`
+
+3. **Estado não persiste**
+   - **Causa**: Store não está sendo compartilhada corretamente
+   - **Solução**: Verificar configuração Module Federation
+
+4. **Erro de carregamento de componentes**
+   - **Causa**: Tipos TypeScript ou imports incorretos
+   - **Solução**: Verificar `module-federation.d.ts` no Host
+
+## 📚 Recursos Adicionais
+
+- [Re.Pack Documentation](https://re-pack.dev/)
+- [Zustand State Management](https://zustand-demo.pmnd.rs/)
+- [Module Federation](https://module-federation.io/)
+- [React Navigation](https://reactnavigation.org/)
+
+## 🤝 Contribuição
+
+1. Clone o repositório
+2. Instale dependências: `npm install`
+3. Inicie o servidor: `npm start`
+4. Faça suas mudanças
+5. Execute testes: `npm test`
+6. Abra um Pull Request
+
+## 📞 Suporte
+
+Para dúvidas sobre autenticação:
+- Documentação: Este README
+- Issues: GitHub Issues
+- Team: Equipe de segurança e autenticação
+
+---
+
+**Auth Module** - Sistema de Autenticação do SuperApp Banking Architecture 🔐

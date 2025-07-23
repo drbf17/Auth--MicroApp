@@ -37,6 +37,8 @@ export default env => {
         filename: 'Auth.js.bundle',
         exposes: {
           './App': './src/App.tsx',
+          './AuthProvider': './src/auth/components/AuthProvider.tsx',
+          './LoginComponent': './src/auth/components/LoginComponent.tsx',
         },
         dts: false,
         shared: {
